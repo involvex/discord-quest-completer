@@ -15,7 +15,8 @@
     "build:runner:darwin": "cd ./src-darwin && cargo build --release && cd ..",
     "copy:runner:darwin": "cp ./src-darwin/target/release/src-darwin ./src-tauri/resources/src-darwin",
     "sync:runner": "bun scripts/sync-runner.mjs",
-    "tauri:dev": "tauri dev"
+    "tauri:dev": "tauri dev",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.3",

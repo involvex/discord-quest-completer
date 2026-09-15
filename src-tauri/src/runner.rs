@@ -23,7 +23,7 @@ pub struct CreateActivityResult {
 fn to_app_id(app_id: &str) -> Result<u64, std::num::ParseIntError> {
     app_id.parse::<u64>().map_err(|e| {
         eprintln!("Failed to parse app_id: {}", e);
-        std::num::ParseIntError::from(e)
+        e
     })
 }
 
@@ -52,7 +52,7 @@ pub fn create_activity(activity_json: String) -> Result<CreateActivityResult, St
     let mut rp: discord_sdk::activity::ActivityBuilder =
         rpc::ds::activity::ActivityBuilder::default();
 
-    if Some(activity_kind) != None {
+    if Some(activity_kind).is_some() {
         if activity_kind == 0 {
             rp = rp.kind(rpc::ds::activity::ActivityKind::Playing);
         } else if activity_kind == 2 {
@@ -78,7 +78,7 @@ pub fn create_activity(activity_json: String) -> Result<CreateActivityResult, St
 
     // timestamp
     if let Some(ts) = timestamp {
-        rp = rp.start_timestamp(ts as i64);
+        rp = rp.start_timestamp(ts);
     }
 
     // large_image_key
@@ -89,7 +89,7 @@ pub fn create_activity(activity_json: String) -> Result<CreateActivityResult, St
 
     Ok(CreateActivityResult {
         activity: rp,
-        app_id: app_id,
+        app_id,
     })
 }
 
