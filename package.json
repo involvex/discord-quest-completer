@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "build:runner:win": "cd ./src-win && cargo build --release && cd ..",
-    "copy:runner:win": "cp ./src-win/target/release/src-win.exe ./src-tauri/resources/src-win.exe",
+    "copy:runner:win": "powershell -ExecutionPolicy Bypass -File ./scripts/copy-win.ps1",
     "build:runner:linux": "cd ./src-linux && cargo build --release && cd ..",
     "copy:runner:linux": "cp ./src-linux/target/release/src-linux ./src-tauri/resources/src-linux",
     "build:runner:darwin": "cd ./src-darwin && cargo build --release && cd ..",

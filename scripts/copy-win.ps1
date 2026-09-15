@@ -1,0 +1,1 @@
+Copy-Item $env:CARGO_TARGET_DIR/release/src-win.exe src-tauri/resources/src-win.exe
