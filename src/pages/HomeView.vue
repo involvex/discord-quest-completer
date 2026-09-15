@@ -104,7 +104,7 @@ const fuseOptions = computed<UseFuseOptions<Game>>(() => ({
     matchAllWhenSearchEmpty: false,
 }));
 
-const { results: searchResults } = useFuse(debouncedSearchQuery, gameDB, fuseOptions)
+const { results: searchResults } = useFuse(debouncedSearchQuery.value, gameDB, fuseOptions)
 
 // Selected games list
 const gameList = ref<Game[]>([]);

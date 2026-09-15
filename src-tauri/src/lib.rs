@@ -141,7 +141,7 @@ async fn create_fake_game(
     handle: tauri::AppHandle,
     path: &str,
     executable_name: &str,
-    path_len: i64,
+    _path_lenn: i64,
     app_id: i64,
     display_name: Option<String>,
 ) -> Result<String, String> {
@@ -232,7 +232,7 @@ async fn run_background_process(
     name: &str,
     path: &str,
     executable_name: &str,
-    path_len: i64,
+    _path_len: i64,
     app_id: i64,
 ) -> Result<String, String> {
     let exe_path = env::current_exe().unwrap_or_default();
@@ -351,13 +351,12 @@ async fn stop_process(exec_name: String) -> Result<(), String> {
 /// ```javascript
 /// await invoke('connect_to_discord_rpc_3', json, 'connect' | 'disconnect');
 #[tauri::command(rename_all = "snake_case")]
-fn connect_to_discord_rpc_3(handle: AppHandle, activity_json: String, action: String) {
+fn connect_to_discord_rpc_3(handle: AppHandle, activity_json: String, _action: String) {
     let app = handle.clone();
 
     let event_connecting = "client_connecting";
     let event_connected = "client_connected";
     let event_disconnect = "event_disconnect";
-    let event_connect = "event_connect";
 
     let activity = runner::parse_activity_json(&activity_json).unwrap();
 
@@ -365,7 +364,7 @@ fn connect_to_discord_rpc_3(handle: AppHandle, activity_json: String, action: St
         "app_id": activity.app_id,
     });
 
-    let client_option = {
+    let _client_option = {
         let mut client_guard = get_discord_client().lock().unwrap();
         // Take the client out, leaving None in its place
         client_guard.take()
@@ -401,7 +400,7 @@ fn connect_to_discord_rpc_3(handle: AppHandle, activity_json: String, action: St
 
         handle.listen(event_disconnect, move |_| {
             println!("Disconnecting from Discord RPC inner");
-            let disconnect_task = tauri::async_runtime::spawn(async move {
+            let _disconnect_task = tauri::async_runtime::spawn(async move {
                 let client_option = {
                     let mut client_guard = get_discord_client().lock().unwrap();
                     // Take the client out, leaving None in its place
@@ -413,7 +412,7 @@ fn connect_to_discord_rpc_3(handle: AppHandle, activity_json: String, action: St
                     println!("Disconnected from Discord RPC inner");
                 }
             });
-            // disconnect_task.abort();
+            // _disconnect_task.abort();
         });
     });
 

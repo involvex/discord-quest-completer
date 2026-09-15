@@ -1,7 +1,5 @@
-use discord_sdk::activity::{ActivityBuilder, ActivityKind};
-use std::{fmt::Error, io::ErrorKind, ops::Deref};
-
 use crate::rpc::{self, Client};
+use discord_sdk::activity::ActivityBuilder;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
