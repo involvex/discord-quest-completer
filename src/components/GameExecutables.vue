@@ -126,9 +126,7 @@ function getExecutablePath(executable: GameExecutable) {
     const last = executable.name.split(/\\|\//).pop();
     // remove file extension if there was none, just return the last section
     const name = last?.split('.').slice(0, -1).join('.') || last;
-    return [
-        ...allSections.slice(0, -1)
-    ].join(path.sep())
+    return allSections.slice(0, -1).join(path.sep())
 }
 
 function getFilename(executable: GameExecutable) {
