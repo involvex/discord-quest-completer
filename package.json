@@ -14,7 +14,7 @@
     "copy:runner:linux": "cp ./src-linux/target/release/src-linux ./src-tauri/resources/src-linux",
     "build:runner:darwin": "cd ./src-darwin && cargo build --release && cd ..",
     "copy:runner:darwin": "cp ./src-darwin/target/release/src-darwin ./src-tauri/resources/src-darwin",
-    "sync:runner": "node scripts/sync-runner.mjs",
+    "sync:runner": "bun scripts/sync-runner.mjs",
     "tauri:dev": "tauri dev"
   },
   "dependencies": {
@@ -35,10 +35,11 @@
     "@tauri-apps/cli": "^2.11.4",
     "@types/lodash-es": "^4.17.12",
     "@vitejs/plugin-vue": "^5.2.1",
-    "npm-run-all": "^4.1.5",
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
     "vue-tsc": "^2.1.10"
   },
-  "packageManager": "pnpm@8.15.3+sha256.fc4a49bd609550a41e14d20efbce802a4b892aa4cac877322de2f0924f122991"
+  "engines": {
+    "bun": ">=1.4.0"
+  }
 }

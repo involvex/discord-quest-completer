@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
 
 const isWindows = process.platform === "win32";
@@ -12,11 +12,11 @@ function run(command, args) {
 }
 
 if (isWindows) {
-  run("pnpm", ["run", "build:runner:win"]);
-  run("pnpm", ["run", "copy:runner:win"]);
+  run("bun", ["run", "build:runner:win"]);
+  run("bun", ["run", "copy:runner:win"]);
 } else if (isDarwin) {
-  run("pnpm", ["run", "build:runner:darwin"]);
-  run("pnpm", ["run", "copy:runner:darwin"]);
+  run("bun", ["run", "build:runner:darwin"]);
+  run("bun", ["run", "copy:runner:darwin"]);
 } else {
   console.error(`Unsupported platform for runner sync: ${process.platform}`);
   process.exit(1);
