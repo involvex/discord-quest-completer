@@ -5,6 +5,7 @@ import { ref, watch } from "vue";
 import { message } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useGlobalState } from "./app-state";
+import { useSettings } from "./settings";
 
 export function useFetchGameList() {
   const { addLog } = useGlobalState();
@@ -189,8 +190,12 @@ export function useFetchGameList() {
     }
   });
 
+  const { settings } = useSettings();
+
   tryOnMounted(async () => {
-    await fetchGameList();
+    if (settings.value.autoFetchGameList) {
+      await fetchGameList();
+    }
   });
 
   return {

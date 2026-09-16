@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, shallowRef, provide, nextTick, triggerRef } from 'vue';
 // import gameListData from '../assets/gamelist.json';
-import { onClickOutside, refDebounced, tryOnMounted } from '@vueuse/core';
+import { onClickOutside, refDebounced, tryOnMounted, useStorage } from '@vueuse/core';
 import { useFuse } from '@vueuse/integrations/useFuse'
 import { invoke } from '@tauri-apps/api/core';
 import { randomString } from '@/utils/random-string';
@@ -105,10 +105,11 @@ const fuseOptions = computed<UseFuseOptions<Game>>(() => ({
 
 const { results: searchResults } = useFuse(debouncedSearchQuery, gameDB, fuseOptions)
 
-// Selected games list
-const gameList = ref<Game[]>([]);
+// Selected games list - persisted across restarts
+const gameList = useStorage<Game[]>('dqc-game-list', []);
 // const selectedGame = ref<Game | null>(null);
-const selectedGameId = ref<string | null | undefined>(null);
+// Selected game ID - persisted across restarts
+const selectedGameId = useStorage<string | null>('dqc-selected-game-id', null);
 
 const selectedGame = computed(() => {
     if (!selectedGameId.value) return null;
@@ -391,8 +392,23 @@ function hideDialog() {
     dialogRef.value?.close(); 
     dialogMessage.value = '';
     isDialogOpen.value = false;
+  }
+
+function resetGameStates() {
+    gameList.value.forEach(game => {
+        game.is_running = false;
+        game.is_installed = false;
+        game.executables.forEach(exe => {
+            exe.is_running = false;
+            exe.is_installed = false;
+        });
+    });
+    currentlyPlaying.value = null;
 }
 
+tryOnMounted(() => {
+    resetGameStates();
+});
 
 provide<GameActionsProvider>(GameActionsKey, {
     canPlayGame,
