@@ -1,7 +1,17 @@
-// Ce fichier est vide car toute la logique est dans main.cpp
-// Le point d'entrée réel est défini par /ENTRY:mainEntryPoint dans build.rs
-#![no_main]
+// Rust entry point that calls C++ mainEntryPoint
 #![no_std]
+#![no_main]
+
+extern "C" {
+    fn mainEntryPoint();
+}
+
+#[no_mangle]
+pub extern "C" fn main() {
+    unsafe {
+        mainEntryPoint();
+    }
+}
 
 #[cfg(not(test))]
 #[panic_handler]

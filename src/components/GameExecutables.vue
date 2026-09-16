@@ -57,7 +57,6 @@
 <script setup lang="ts">
 import { EXECUTABLE_OS, GameActionsKey, getCurrentOS, isMacOS } from '@/constants/constants';
 import { GameActionsProvider, type Game, type GameExecutable } from '@/types/types';
-import { path } from '@tauri-apps/api';
 import { computed, inject } from 'vue';
 
 const props = defineProps<{
@@ -126,7 +125,8 @@ function getExecutablePath(executable: GameExecutable) {
     const last = executable.name.split(/\\|\//).pop();
     // remove file extension if there was none, just return the last section
     const name = last?.split('.').slice(0, -1).join('.') || last;
-    return allSections.slice(0, -1).join(path.sep())
+    // Use forward slash as separator to match Discord API format and Rust Path handling
+    return allSections.slice(0, -1).join('/')
 }
 
 function getFilename(executable: GameExecutable) {

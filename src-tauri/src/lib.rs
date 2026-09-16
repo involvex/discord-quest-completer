@@ -16,17 +16,17 @@ fn get_discord_client() -> &'static Mutex<Option<rpc::Client>> {
     DISCORD_CLIENT.get_or_init(|| Mutex::new(None))
 }
 
-fn runner_resource_name() -> &'static str {
+fn runner_resource_candidates() -> Vec<&'static str> {
     #[cfg(target_os = "windows")]
-    let runner_name = "data/src-win.exe";
+    let names = vec!["src-win.exe", "resources/src-win.exe", "data/src-win.exe"];
 
     #[cfg(target_os = "linux")]
-    let runner_name = "data/src-linux";
+    let names = vec!["src-linux", "resources/src-linux", "data/src-linux"];
 
     #[cfg(target_os = "macos")]
-    let runner_name = "data/src-darwin";
+    let names = vec!["src-darwin", "resources/src-darwin", "data/src-darwin"];
 
-    runner_name
+    names
 }
 
 fn is_app_bundle(executable_name: &str) -> bool {
@@ -50,10 +50,43 @@ fn game_folder_path(exe_dir: &Path, path: &str, app_id: i64) -> PathBuf {
 }
 
 fn resolve_runner_template(handle: &AppHandle) -> Result<PathBuf, String> {
-    handle
-        .path()
-        .resolve(runner_resource_name(), BaseDirectory::Resource)
-        .map_err(|e| format!("Failed to resolve runner template: {}", e))
+    let mut tried: Vec<String> = Vec::new();
+
+    for candidate in runner_resource_candidates() {
+        match handle.path().resolve(candidate, BaseDirectory::Resource) {
+            Ok(p) if p.exists() => return Ok(p),
+            Ok(p) => tried.push(format!("{} (resolved to {:?}, missing)", candidate, p)),
+            Err(e) => tried.push(format!("{} (resolve error: {})", candidate, e)),
+        }
+    }
+
+    // Dev fallback: look next to the current exe and in src-tauri/resources
+    // (covers `tauri dev` where resources may not be bundled yet).
+    if let Ok(exe) = env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            for file_name in runner_resource_candidates()
+                .iter()
+                .map(|c| c.rsplit('/').next().unwrap_or(c))
+            {
+                for dir in [
+                    exe_dir.to_path_buf(),
+                    exe_dir.join("resources"),
+                    exe_dir.join("data"),
+                ] {
+                    let p = dir.join(file_name);
+                    if p.exists() {
+                        return Ok(p);
+                    }
+                    tried.push(format!("dev fallback {:?} (missing)", p));
+                }
+            }
+        }
+    }
+
+    Err(format!(
+        "Runner template not found. Tried: {}. Run `pnpm build:runner:win` + `pnpm copy:runner:win` first.",
+        tried.join("; ")
+    ))
 }
 
 fn make_macos_app_bundle(
@@ -141,7 +174,7 @@ async fn create_fake_game(
     handle: tauri::AppHandle,
     path: &str,
     executable_name: &str,
-    _path_lenn: i64,
+    _path_len: i64,
     app_id: i64,
     display_name: Option<String>,
 ) -> Result<String, String> {
@@ -256,21 +289,43 @@ async fn run_background_process(
     }
 
     let executable_path = launch_executable_path(&game_folder_path, executable_name);
-    
+
+    if !executable_path.exists() {
+        return Err(format!(
+            "Game executable not found at {:?}. Press Play again to reinstall it (create_fake_game must succeed first).",
+            executable_path
+        ));
+    }
+
+    // Ensure working dir exists (create_fake_game should have created it).
+    if let Err(e) = fs::create_dir_all(&game_folder_path) {
+        return Err(format!(
+            "Failed to create game working dir {:?}: {}",
+            game_folder_path, e
+        ));
+    }
+
     let mut cmd = std::process::Command::new(&executable_path);
     cmd.args(["--title", name])
-       .current_dir(game_folder_path);
-    
+       .current_dir(&game_folder_path);
+
     // Platform-specific process spawning
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
         cmd.process_group(0); // Create new process group on Unix
     }
-    
+
     match cmd.spawn() {
-        Ok(_) => Ok("Process started successfully".to_string()),
-        Err(e) => Err(format!("Failed to start process: {}", e)),
+        Ok(child) => Ok(format!(
+            "Process started successfully (pid: {:?}, exe: {:?})",
+            child.id(),
+            executable_path
+        )),
+        Err(e) => Err(format!(
+            "Failed to start process {:?} (working dir {:?}): {}",
+            executable_path, game_folder_path, e
+        )),
     }
 }
 

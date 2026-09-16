@@ -39,7 +39,13 @@ const { page, setPage } = appState;
               </a>
             </li>
             <li>
-              <a href="#" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Settings</a>
+              <a href="#" 
+                class="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400"
+                :class="{ 'text-indigo-600 dark:text-indigo-400': page === Pages.SETTINGS }"
+                @click.prevent="setPage(Pages.SETTINGS)"
+              >
+                Settings
+              </a>
             </li>
           </ul>
         </nav>

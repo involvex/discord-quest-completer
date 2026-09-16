@@ -10,7 +10,6 @@ import IconVerified from '@/components/IconVerified.vue';
 import { isEmpty } from 'lodash-es';
 import GameExecutables from '@/components/GameExecutables.vue';
 import { GameActionsKey } from '@/constants/constants';
-import { path } from '@tauri-apps/api';
 import { emit } from '@tauri-apps/api/event';
 import { useFetchGameList } from '@/composables/fetch-gamelist';
 import { UseFuseOptions } from '@vueuse/integrations';
@@ -104,7 +103,7 @@ const fuseOptions = computed<UseFuseOptions<Game>>(() => ({
     matchAllWhenSearchEmpty: false,
 }));
 
-const { results: searchResults } = useFuse(debouncedSearchQuery.value, gameDB, fuseOptions)
+const { results: searchResults } = useFuse(debouncedSearchQuery, gameDB, fuseOptions)
 
 // Selected games list
 const gameList = ref<Game[]>([]);
@@ -192,13 +191,13 @@ function isGameInstalled(game: Game | null) {
 // Create a dummy game
 async function createDummyGame(game: Game | null, executable: GameExecutable) {
     if (!game) {
-        return;
+        return false;
     }
     const gameUid = game.uid;
     const gameToInstall = gameList.value.find(g => g.uid === gameUid);
     const executableItem = gameToInstall?.executables.find(exe => exe.name === executable.name);
     if (gameToInstall && executableItem) {
-        const payload =  { 
+        const payload =  {
             path: executable.path,
             executable_name: executable.filename,
             path_len: executable.segments,
@@ -206,12 +205,21 @@ async function createDummyGame(game: Game | null, executable: GameExecutable) {
             display_name: gameToInstall.name,
         }
         console.log(payload);
-        const result = await invoke('create_fake_game', payload)
-        console.log('Game created:', result);
-        gameToInstall.is_installed = true;
-        executableItem.is_installed = true;
-        return true;
+        try {
+            const result = await invoke('create_fake_game', payload)
+            console.log('Game created:', result);
+            addLog('info', String(result));
+            gameToInstall.is_installed = true;
+            executableItem.is_installed = true;
+            return true;
+        } catch (error) {
+            console.error('Failed to create game:', error);
+            const errorMessage = (error instanceof Error) ? error.message : String(error);
+            addLog('error', 'Failed to create game: ' + errorMessage);
+            return false;
+        }
     }
+    return false;
 }
 
 
@@ -219,12 +227,18 @@ async function installAndPlay({game, executable}: {game: Game, executable: GameE
     if (!game) {
         return;
     }
-    const gameCreated = await createDummyGame(game, executable);
-    if (gameCreated) {
-        playGame({game, executable});
-    } else {
-        console.error('Failed to create game');
-        addLog('error', 'Failed to create game');
+    try {
+        const gameCreated = await createDummyGame(game, executable);
+        if (gameCreated) {
+            await playGame({game, executable});
+        } else {
+            console.error('Failed to create game');
+            addLog('error', 'Failed to create game');
+        }
+    } catch (error) {
+        console.error('Failed to install and play:', error);
+        const errorMessage = (error instanceof Error) ? error.message : String(error);
+        addLog('error', 'Failed to install and play: ' + errorMessage);
     }
 }
 // Play game function
@@ -237,27 +251,31 @@ async function playGame({game, executable}: {game: Game, executable: GameExecuta
         console.log(`Playing game: ${gameUid}`);
         addLog('info', `Playing game: ${game.name}`);
         addLog('info', `Executable: ${executable.name}`);
-        currentlyPlaying.value = game.id;
         // find the game in the list
         const gameToPlay = gameList.value.find(g => g.uid === gameUid);
         const executableItem = gameToPlay?.executables.find(exe => exe.name === executable.name);
         if (gameToPlay && executableItem) {
-            const payload =  { 
+            const payload =  {
                 name: game.name,
                 path: executable.path,
                 executable_name: executable.filename,
                 path_len: executable.segments,
                 app_id: Number(gameToPlay.id),
-                exec_path: path.join(executable.path!, executable.filename!),
-            } 
-            await invoke('run_background_process', payload);
+            }
+            const result = await invoke('run_background_process', payload);
+            console.log('Process launched:', result);
+            addLog('info', String(result));
+            currentlyPlaying.value = game.id;
             gameToPlay.is_running = true;
-            executableItem.is_running = true; 
+            executableItem.is_running = true;
         }
         // In a real app, this would invoke a Tauri command to launch the game
-       
+
     } catch (error) {
         console.error('Failed to launch game:', error);
+        const errorMessage = (error instanceof Error) ? error.message : String(error);
+        addLog('error', 'Failed to launch game: ' + errorMessage);
+        currentlyPlaying.value = null;
     }
 }
 
